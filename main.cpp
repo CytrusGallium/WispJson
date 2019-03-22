@@ -6,15 +6,15 @@
 
 using namespace std;
 
-struct JsonElement;
 struct KeyValuePair;
-map<int, JsonElement> PrettyPrintJson (string ParamJson);
+void PrettyPrintJson (string ParamJson);
 bool JsonCheckSyntax (string ParamJson);
 string GenerateTabs (int ParamAmount);
-void ParseJson (string ParamJson);
+map<string, string> ParseJson (string ParamJson);
 bool CheckJsonIfValueIsObject (string ParamJson);
 KeyValuePair GetKeyValuePairFromJsonElement (string ParamJson);
 void PrintMarker (string ParamMarker);
+string CleanKeyFromQuotationMarks (string ParamKey);
 
 int main()
 {
@@ -25,25 +25,15 @@ int main()
     // cout << JsonCheckSyntax(testJson_3);
     PrettyPrintJson(testJson_2);
     cout << endl;
-    ParseJson(testJson_2);
+    map<string, string> json = ParseJson(testJson_2);
+    cout << endl;
+
+    PrintMarker("MANUAL");
+    // cout << CleanKeyFromQuotationMarks("\"Type\"");
+    cout << json.at("Type");
 
     return 0;
 }
-
-struct JsonElement
-{
-    char type;
-    // b : bool
-    // i : integer
-    // s : string
-    // a : array
-    // o : object
-    // n : null
-
-    map<int, JsonElement> elements;
-
-    int depth = 0;
-};
 
 struct KeyValuePair
 {
@@ -51,9 +41,8 @@ struct KeyValuePair
     string Value;
 };
 
-map<int, JsonElement> PrettyPrintJson (string ParamJson)
+void PrettyPrintJson (string ParamJson)
 {
-    map<int, JsonElement> result;
     int i = 0;
     int length = ParamJson.length();
     int currentLevel = 0;
@@ -110,7 +99,7 @@ map<int, JsonElement> PrettyPrintJson (string ParamJson)
         }
         else
         {
-            return result;
+            return;
         }
 
     SetConsoleTextAttribute(hConsole, 7);
@@ -210,7 +199,7 @@ map<int, JsonElement> PrettyPrintJson (string ParamJson)
     }
 
     SetConsoleTextAttribute(hConsole, 7);
-    return result;
+    return;
 }
 
 bool JsonCheckSyntax (string ParamJson)
@@ -278,7 +267,7 @@ string GenerateTabs (int ParamAmount)
     return result;
 }
 
-void ParseJson (string ParamJson)
+map<string,string> ParseJson (string ParamJson)
 {
     int i;
     int length = ParamJson.length();
@@ -286,6 +275,7 @@ void ParseJson (string ParamJson)
     int curlyBracers = 0;
     string buffer;
     char startingCharacter;
+    map<string, string> result;
 
     // I don't know why i need the starting character but i will store it.
     if (ParamJson[0] == '{')
@@ -300,7 +290,7 @@ void ParseJson (string ParamJson)
     }
     else
     {
-        return;
+        return result;
     }
 
     // Get Json Chunk
@@ -387,11 +377,19 @@ void ParseJson (string ParamJson)
     for(int i = 0; i < stringList.size(); i++)
     {
         cout << stringList[i] << endl;
+        KeyValuePair tmpPair = GetKeyValuePairFromJsonElement(stringList[i]);
+        result.insert(pair<string,string>(tmpPair.Key,tmpPair.Value));
     }
+
+    // showing contents:
+    PrintMarker("MAP");
+    map<string,string>::iterator it;
+    for (it=result.begin(); it!=result.end(); ++it)
+        cout << it->first << " => " << it->second << endl;
 
     // TODO : Check if elements is Json Object or Key-Value Pair
     // Parse elements if they are Json objects
-
+    /*
     cout << endl;
     for(int i = 0; i < stringList.size(); i++)
     {
@@ -404,6 +402,7 @@ void ParseJson (string ParamJson)
         }
 
     }
+    */
 }
 
 bool CheckJsonIfValueIsObject (string ParamJson)
@@ -479,8 +478,8 @@ KeyValuePair GetKeyValuePairFromJsonElement (string ParamJson)
     }
 
     KeyValuePair result;
-    result.Key = keyBuffer;
-    result.Value = valueBuffer;
+    result.Key = CleanKeyFromQuotationMarks(keyBuffer);
+    result.Value = CleanKeyFromQuotationMarks(valueBuffer);
 
     return result;
 }
@@ -492,4 +491,17 @@ void PrintMarker (string ParamMarker)
     SetConsoleTextAttribute(hConsole, 79);
     cout << ParamMarker << endl;
     SetConsoleTextAttribute(hConsole, 7);
+}
+
+string CleanKeyFromQuotationMarks (string ParamKey)
+{
+    string result = ParamKey;
+
+    if (result[0] == '"' && result[result.length()-1] == '"')
+    {
+        result.erase(0, 1);
+        result.erase(result.length()-1);
+    }
+
+    return result;
 }
